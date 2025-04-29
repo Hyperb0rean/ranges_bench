@@ -16,10 +16,10 @@
 
 static std::mt19937 gen{42};
 
-std::vector<int64_t> generate(size_t size) {
-  std::vector<int64_t> vec(size);
-  std::uniform_int_distribution<int64_t> dist(
-      0, std::numeric_limits<int64_t>::max());
+std::vector<uint64_t> generate(size_t size) {
+  std::vector<uint64_t> vec(size);
+  std::uniform_int_distribution<uint64_t> dist(
+      0, std::numeric_limits<uint64_t>::max());
   std::generate(vec.begin(), vec.end(), [&]() { return dist(gen); });
   return vec;
 }
@@ -43,7 +43,7 @@ static void BM_FilterCollect(benchmark::State& state) {
         benchmark::DoNotOptimize(
             data                                                           //
             | std::views::filter([](auto&& num) { return num % 2 == 0; })  //
-            | std::ranges::to<std::vector<int64_t>>());
+            | std::ranges::to<std::vector<uint64_t>>());
 
         break;
     }
@@ -60,17 +60,17 @@ static void BM_FilterMapCollect(benchmark::State& state) {
     switch (state.range(1)) {
       case FMCStorm:
         benchmark::DoNotOptimize(
-            View{data}                                                     //
-            | ranges::Filter([](auto&& num) { return num % 2 == 0; })      //
-            | ranges::Map([](auto&& num) { return std::to_string(num); })  //
+            View{data}                                                 //
+            | ranges::Filter([](auto&& num) { return num % 2 == 0; })  //
+            | ranges::Map([](auto&& num) { return num * num; })        //
             | ranges::Collect<>{});
         break;
       case FMCStormOptimized:
         benchmark::DoNotOptimize(
             View{data}  //
-            | ranges::FilterMap([](auto&& num) -> std::optional<std::string> {
+            | ranges::FilterMap([](auto&& num) -> std::optional<int64_t> {
                 if (num % 2 == 0) {
-                  return std::to_string(num);
+                  return num * num;
                 }
                 return std::nullopt;
               })  //
@@ -78,11 +78,10 @@ static void BM_FilterMapCollect(benchmark::State& state) {
         break;
       case FMCStl:
         benchmark::DoNotOptimize(
-            data                                                            //
-            | std::views::filter([](int64_t num) { return num % 2 == 0; })  //
-            | std::views::transform(
-                  [](auto&& num) { return std::to_string(num); })  //
-            | std::ranges::to<std::vector<std::string>>());
+            data                                                           //
+            | std::views::filter([](auto&& num) { return num % 2 == 0; })  //
+            | std::views::transform([](auto&& num) { return num * num; })  //
+            | std::ranges::to<std::vector<uint64_t>>());
 
         break;
     }
@@ -97,32 +96,29 @@ static void BM_MapFilterCollect(benchmark::State& state) {
     switch (state.range(1)) {
       case FMCStorm:
         benchmark::DoNotOptimize(
-            View{data}                                                        //
-            | ranges::Map([](auto&& num) { return std::to_string(num); })     //
-            | ranges::Filter([](auto&& num) { return num.size() % 2 == 0; })  //
+            View{data}                                                 //
+            | ranges::Map([](auto&& num) { return num * num; })        //
+            | ranges::Filter([](auto&& num) { return num % 2 == 0; })  //
             | ranges::Collect<>{});
         break;
       case FMCStormOptimized:
         benchmark::DoNotOptimize(
             View{data}  //
-            | ranges::FilterMap([](auto&& num) -> std::optional<std::string> {
-                auto str = std::to_string(num);
-                if (str.size() % 2 == 0) {
-                  return std::move(str);
+            | ranges::FilterMap([](auto&& num) -> std::optional<uint64_t> {
+                auto res = num * num;
+                if (res % 2 == 0) {
+                  return res;
                 }
                 return std::nullopt;
               })  //
             | ranges::Collect<>{});
         break;
       case FMCStl:
-        benchmark::DoNotOptimize(data  //
-                                 | std::views::transform([](auto&& num) {
-                                     return std::to_string(num);
-                                   })  //
-                                 | std::views::filter([](auto&& num) {
-                                     return num.size() % 2 == 0;
-                                   })  //
-                                 | std::ranges::to<std::vector<std::string>>());
+        benchmark::DoNotOptimize(
+            data                                                           //
+            | std::views::transform([](auto&& num) { return num * num; })  //
+            | std::views::filter([](auto&& num) { return num % 2 == 0; })  //
+            | std::ranges::to<std::vector<uint64_t>>());
 
         break;
     }

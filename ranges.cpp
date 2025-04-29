@@ -24,7 +24,7 @@ std::vector<uint64_t> generate(size_t size) {
   return vec;
 }
 
-enum FilterCollect { FCStl, FCStorm };
+enum FilterCollect { FCStl, FCStorm, FCSimple };
 
 static void BM_FilterCollect(benchmark::State& state) {
   size_t size = state.range(0);
@@ -46,6 +46,16 @@ static void BM_FilterCollect(benchmark::State& state) {
             | std::ranges::to<std::vector<uint64_t>>());
 
         break;
+
+      case FCSimple: {
+        std::vector<uint64_t> n;
+        for (auto&& num : data) {
+          if (num % 2 == 0) {
+            n.emplace_back(std::move(num));
+          }
+        }
+        benchmark::DoNotOptimize(n);
+      } break;
     }
   }
 }
@@ -127,17 +137,23 @@ static void BM_MapFilterCollect(benchmark::State& state) {
 
 BENCHMARK(BM_FilterCollect)
     ->Args({100, FCStl})
-    ->Args({100, FCStorm})  //
+    ->Args({100, FCStorm})   //
+    ->Args({100, FCSimple})  //
     ->Args({1000, FCStl})
-    ->Args({1000, FCStorm})  //
+    ->Args({1000, FCStorm})   //
+    ->Args({1000, FCSimple})  //
     ->Args({10000, FCStl})
     ->Args({10000, FCStorm})
+    ->Args({10000, FCSimple})
     ->Args({100000, FCStl})
-    ->Args({100000, FCStorm})  //
+    ->Args({100000, FCStorm})   //
+    ->Args({100000, FCSimple})  //
     ->Args({1000000, FCStl})
-    ->Args({1000000, FCStorm})  //
+    ->Args({1000000, FCStorm})   //
+    ->Args({1000000, FCSimple})  //
     ->Args({100000000, FCStl})
-    ->Args({100000000, FCStorm})  //
+    ->Args({100000000, FCStorm})   //
+    ->Args({100000000, FCSimple})  //
     ;
 
 BENCHMARK(BM_FilterMapCollect)

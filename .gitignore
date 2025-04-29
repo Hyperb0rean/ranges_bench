@@ -1,0 +1,10 @@
+server
+client
+Makefile
+.clang-format
+.gitlab-ci.yml
+
+build
+.cache
+.vscode
+
